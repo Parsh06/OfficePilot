@@ -13,7 +13,6 @@ import {
   Sparkles, 
   ArrowRight, 
   ArrowLeft,
-  PlaneTakeoff, 
   Calendar,
   Building2,
   Hotel,
@@ -296,12 +295,12 @@ export const OnboardingPage: React.FC = () => {
 
       <div className="w-full max-w-2xl space-y-6 relative z-10 my-auto">
         {/* Header Branding */}
-        <div className="text-center space-y-1.5">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-500 text-white shadow-xl shadow-indigo-600/30 mb-1">
-            <PlaneTakeoff className="h-6 w-6" />
+        <div className="text-center space-y-2">
+          <div className="relative inline-flex items-center justify-center p-2.5 rounded-2xl bg-[#0e111d]/90 border border-slate-800 shadow-xl shadow-indigo-950/40 backdrop-blur-xl mb-1">
+            <img src="/assets/full_logo.png" alt="Office Pilot" className="h-10 sm:h-12 w-auto max-w-[220px] object-contain drop-shadow" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            WorkTrip Setup Wizard
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            Office Pilot Setup Wizard
           </h1>
           <p className="text-xs text-slate-400">
             Step {step} of {totalSteps}: {
@@ -1045,7 +1044,7 @@ export const OnboardingPage: React.FC = () => {
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Launch WorkTrip AI Dashboard</span>
+                    <span>Launch Office Pilot Dashboard</span>
                   </>
                 )}
               </Button>

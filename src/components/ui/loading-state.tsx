@@ -28,9 +28,16 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         className
       )}
     >
-      <div className="relative mb-4">
-        <div className="absolute inset-0 rounded-full bg-indigo-500/20 blur-md animate-pulse" />
-        <Loader2 className={cn('animate-spin text-indigo-400 relative z-10', spinnerSizes[size])} />
+      <div className="relative mb-4 flex items-center justify-center">
+        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-indigo-600/30 via-purple-600/20 to-transparent blur-md animate-pulse pointer-events-none" />
+        <div className="relative z-10 p-2.5 rounded-2xl bg-[#101322] border border-slate-800 shadow-xl flex items-center justify-center">
+          <img 
+            src="/assets/Appicon.png" 
+            alt="Office Pilot" 
+            className={cn('object-contain', size === 'sm' ? 'w-6 h-6' : size === 'lg' ? 'w-12 h-12' : 'w-8 h-8')} 
+          />
+          <Loader2 className={cn('absolute -top-1 -right-1 text-indigo-400 animate-spin', spinnerSizes[size])} />
+        </div>
       </div>
       <p className="text-sm font-medium text-slate-200">{label}</p>
       {sublabel && <p className="text-xs text-slate-400 mt-1 max-w-xs">{sublabel}</p>}

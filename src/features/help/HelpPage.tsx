@@ -14,8 +14,8 @@ export const HelpPage: React.FC = () => {
 
   const faqs = [
     {
-      q: 'How does WorkTrip AI calculate my monthly travel savings?',
-      a: 'WorkTrip AI analyzes historical flight fare trends, corporate lodging rates, and local transit patterns. By clustering single-day visits into consolidated multi-day blocks, the engine eliminates redundant roundtrip airfares and airport commutes.',
+      q: 'How does Office Pilot calculate my monthly travel savings?',
+      a: 'Office Pilot analyzes historical train/flight fare trends, corporate lodging rates, and local transit patterns. By clustering single-day visits into consolidated multi-day blocks, the engine eliminates redundant roundtrip fares and station commutes.',
     },
     {
       q: 'How do I log a trip that includes both flights and hotel bookings?',

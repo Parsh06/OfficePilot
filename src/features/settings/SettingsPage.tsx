@@ -95,7 +95,7 @@ export const SettingsPage: React.FC = () => {
       } catch {
         // Fallback to client-side store aggregation
         exportPayload = {
-          application: 'WorkTrip AI',
+          application: 'Office Pilot',
           version: '1.0.0-production-mvp',
           exportedAt: new Date().toISOString(),
           userId: user?.uid || 'guest-user',
@@ -350,7 +350,7 @@ export const SettingsPage: React.FC = () => {
               <div className="text-xs text-slate-300">
                 <p className="font-semibold text-white">AI Policy Guardrail Active</p>
                 <p className="mt-0.5 text-slate-400">
-                  WorkTrip AI automatically enforces per diem rules ($75/day) and flags refundable flight options.
+                  Office Pilot automatically enforces per diem rules (₹1,500/day) and flags refundable travel options.
                 </p>
               </div>
             </div>

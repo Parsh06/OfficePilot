@@ -42,6 +42,10 @@ export const TopBar: React.FC<TopBarProps> = ({
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-800/80 bg-[#090a0f]/80 backdrop-blur-md px-4 sm:px-6">
       {/* Search trigger button (Cmd + K) */}
       <div className="flex items-center gap-3 flex-1 max-w-md">
+        {/* Mobile Brand Logo */}
+        <div className="flex md:hidden items-center shrink-0">
+          <img src="/assets/Appicon.png" alt="Office Pilot" className="h-8 w-8 rounded-xl object-contain shadow-md shadow-indigo-600/20" />
+        </div>
         <button
           type="button"
           onClick={onOpenCommandPalette}

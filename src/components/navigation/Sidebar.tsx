@@ -15,7 +15,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Compass,
-  PlaneTakeoff,
   Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -57,16 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800/80">
           <NavLink to="/dashboard" className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30">
-              <PlaneTakeoff className="h-5 w-5" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                  Office <span className="text-[10px] uppercase font-bold text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded border border-indigo-500/30">Pilot</span>
-                </span>
-                <span className="text-[11px] text-slate-400 font-medium">Smart Hybrid Mobility</span>
+            {isCollapsed ? (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#121522] border border-slate-800 shadow-md hover:border-slate-700 transition-colors">
+                <img src="/assets/Appicon.png" alt="Office Pilot" className="h-8 w-8 object-contain rounded-lg" />
               </div>
+            ) : (
+              <img src="/assets/full_logo.png" alt="Office Pilot" className="h-9 w-auto max-w-[175px] object-contain drop-shadow" />
             )}
           </NavLink>
 

@@ -73,7 +73,7 @@ export const AIAssistantPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              WorkTrip AI Actions & Intelligence
+              Office Pilot AI Actions & Intelligence
               <span className="text-[10px] uppercase font-bold text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-md border border-indigo-500/30 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
                 Two-Phase Actions
@@ -327,7 +327,7 @@ export const AIAssistantPage: React.FC = () => {
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               mode === 'ASK'
-                ? 'Ask WorkTrip AI: "Make Thursday WFH", "Make all Thursdays WFH for the next 3 months"...'
+                ? 'Ask Office Pilot AI: "Make Thursday WFH", "Make all Thursdays WFH for the next 3 months"...'
                 : mode === 'ANALYZE'
                 ? 'Analyze spending variances, flight vs train costs, fatigue metrics...'
                 : 'Plan upcoming office sprints, holiday bridges, lodging batches...'

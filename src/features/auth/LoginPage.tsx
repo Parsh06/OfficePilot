@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
-  Compass, 
   ShieldCheck, 
   AlertCircle, 
   Sparkles, 
@@ -65,17 +64,17 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md space-y-7 relative z-10">
         {/* Brand Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-500 text-white shadow-2xl shadow-indigo-600/40 mb-1 ring-1 ring-white/20">
-            <Compass className="h-8 w-8 text-white animate-pulse" />
+          <div className="relative inline-flex items-center justify-center p-3.5 rounded-3xl bg-[#0e111d]/90 border border-slate-800/80 shadow-2xl shadow-indigo-950/50 backdrop-blur-xl group">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 via-purple-600/25 to-indigo-600/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <img
+              src="/assets/full_logo.png"
+              alt="Office Pilot"
+              className="h-16 sm:h-20 w-auto max-w-[280px] object-contain relative z-10 drop-shadow-lg"
+            />
           </div>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center justify-center gap-2">
-              Office <span className="text-xs uppercase font-extrabold text-indigo-400 bg-indigo-500/15 px-2.5 py-1 rounded-lg border border-indigo-500/30 tracking-widest">Pilot</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto font-medium mt-1">
-              Smart hybrid work mobility, route automation & enterprise travel intelligence.
-            </p>
-          </div>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto font-medium mt-1">
+            Smart hybrid work mobility, route automation & enterprise travel intelligence.
+          </p>
         </div>
 
         {/* Authentication Card */}

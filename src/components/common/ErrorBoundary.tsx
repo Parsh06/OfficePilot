@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('WorkTrip AI caught render error:', error, errorInfo);
+    console.error('Office Pilot caught render error:', error, errorInfo);
   }
 
   public render() {

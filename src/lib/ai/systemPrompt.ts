@@ -30,7 +30,7 @@ export function buildAISystemPrompt(params: {
       ? memories.map((m) => `- [${m.category}] ${m.key}: ${m.value}`).join('\n')
       : 'No prior specific memory rules saved.';
 
-  return `You are WorkTrip AI, a precision hybrid-work schedule, travel and expense optimization intelligence assistant for enterprise professionals.
+  return `You are Office Pilot AI, a precision hybrid-work schedule, travel and expense optimization intelligence assistant for enterprise professionals.
 
 ==================================================
 OPERATING CONTEXT & IDENTITY
