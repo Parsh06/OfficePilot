@@ -11,8 +11,8 @@ export async function getUserSchedule(userId: string) {
   return (
     schedule || {
       uid: userId,
-      homeCity: 'San Francisco, CA',
-      officeCity: 'Seattle, WA',
+      homeCity: 'Mumbai, Maharashtra',
+      officeCity: 'Pune Technology Center',
       wfoTargetDaysPerMonth: 8,
       standardWfoDays: ['Tuesday', 'Wednesday', 'Thursday'],
       batchingCadence: 'BIWEEKLY',

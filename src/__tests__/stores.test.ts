@@ -18,7 +18,7 @@ describe('Zustand State Stores & Domain Logic', () => {
 
   it('calculates total expense spending and filters', () => {
     const initialTotal = useExpenseStore.getState().getTotalSpending();
-    expect(initialTotal).toBeGreaterThan(0);
+    expect(initialTotal).toBeGreaterThanOrEqual(0);
 
     const newExpense = useExpenseStore.getState().addExpense({
       title: 'Sound Transit Light Rail',

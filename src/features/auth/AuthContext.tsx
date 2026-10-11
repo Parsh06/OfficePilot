@@ -35,23 +35,6 @@ export interface AuthContextType {
   clearError: () => void;
 }
 
-const DEMO_USER_UID = 'demo-traveler-uid-001';
-
-export const DEMO_USER_PROFILE: UserDocument = {
-  uid: DEMO_USER_UID,
-  displayName: 'Parsh Jain',
-  email: 'parsh@worktrip.ai',
-  photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  homeCity: 'San Francisco, CA',
-  officeCity: 'Seattle HQ',
-  organization: 'Acme Enterprise',
-  timezone: 'America/Los_Angeles',
-  currency: 'USD',
-  onboardingCompleted: true,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: new Date().toISOString(),
-};
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -63,6 +46,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  // Wipe any legacy demo session on mount so unauthenticated users land on /login
+  useEffect(() => {
+    try {
+      localStorage.removeItem('worktrip_demo_user');
+    } catch {
+      // Ignore
+    }
   }, []);
 
   // Helper to load user profile & preferences from Firestore
@@ -83,20 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Subscribe to Firebase Auth state
   useEffect(() => {
-    // Check if we have a demo session persisted in localStorage
-    const savedDemoUser = localStorage.getItem('worktrip_demo_user');
-    if (savedDemoUser) {
-      try {
-        const parsed = JSON.parse(savedDemoUser) as UserDocument;
-        setUser(parsed);
-        setPreferences(getDefaultPreferences());
-        setIsLoading(false);
-        return;
-      } catch {
-        localStorage.removeItem('worktrip_demo_user');
-      }
-    }
-
     const unsubscribe = onAuthStateChanged(auth, async (currentFirebaseUser) => {
       setFirebaseUser(currentFirebaseUser);
       if (currentFirebaseUser) {
@@ -109,12 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('[AuthContext] Error syncing user on auth change:', err);
         }
       } else {
-        // If not in demo mode and no firebase user, clear state
-        const demoStored = localStorage.getItem('worktrip_demo_user');
-        if (!demoStored) {
-          setUser(null);
-          setPreferences(null);
-        }
+        setUser(null);
+        setPreferences(null);
       }
       setIsLoading(false);
     });
@@ -127,40 +101,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
 
-    // If Firebase isn't configured with real credentials yet, seamlessly provide demo login with prompt
     if (!isFirebaseConfigured()) {
-      try {
-        return await signInWithDemoUser(true);
-      } finally {
-        setIsLoading(false);
-      }
+      const msg = 'Firebase is not yet configured with valid credentials in .env';
+      setError(msg);
+      toast.error(msg);
+      setIsLoading(false);
+      return undefined;
     }
 
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const fbUser = userCredential.user;
       setFirebaseUser(fbUser);
-      localStorage.removeItem('worktrip_demo_user');
 
       const profile = await syncUserProfileFromAuth(fbUser);
       const prefs = await getUserPreferences(fbUser.uid);
       setUser(profile);
       setPreferences(prefs);
-      toast.success(`Welcome to WorkTrip AI, ${profile.displayName || 'Traveler'}!`);
+      toast.success(`Welcome to Office Pilot, ${profile.displayName || 'Traveler'}!`);
       return profile;
     } catch (err: any) {
       let friendlyMessage = 'Failed to sign in with Google. Please try again.';
 
       if (err.code === 'auth/popup-blocked') {
-        friendlyMessage = 'Popup was blocked by your browser. Please allow popups or use Demo Sign-in.';
+        friendlyMessage = 'Popup was blocked by your browser. Please allow popups for this site.';
       } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         friendlyMessage = 'Sign-in window was closed before completing.';
       } else if (err.code === 'auth/network-request-failed') {
         friendlyMessage = 'Network error during authentication. Please check your connection.';
       } else if (err.code === 'auth/unauthorized-domain') {
-        friendlyMessage = 'Authentication domain not configured in Firebase. Falling back to Demo Mode.';
-        // Auto fallback to demo user
-        return await signInWithDemoUser(true);
+        friendlyMessage = 'Authentication domain not authorized in Firebase console.';
       }
 
       setError(friendlyMessage);
@@ -171,21 +141,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Demo user sign-in (for rapid preview, testing, or unconfigured local environments)
+  // Demo fallback strictly for test suites that mock useAuth
   const signInWithDemoUser = async (completedOnboarding: boolean = true): Promise<UserDocument> => {
     setIsLoading(true);
     setError(null);
     const demoProfile: UserDocument = {
-      ...DEMO_USER_PROFILE,
+      uid: 'demo-user-test',
+      displayName: 'Office Pilot User',
+      email: 'user@officepilot.app',
+      homeCity: 'Mumbai, Maharashtra',
+      officeCity: 'Pune Technology Center',
+      organization: 'Enterprise Corp',
+      timezone: 'Asia/Kolkata',
+      currency: 'INR',
       onboardingCompleted: completedOnboarding,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-
-    localStorage.setItem('worktrip_demo_user', JSON.stringify(demoProfile));
     setUser(demoProfile);
     setPreferences(getDefaultPreferences());
     setIsLoading(false);
-    toast.success('Signed in as Demo Traveler');
     return demoProfile;
   };
 
@@ -201,7 +176,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.info('Signed out successfully');
     } catch (err) {
       console.warn('[AuthContext] Sign-out warning:', err);
-      // Ensure local state is wiped even if remote signout fails
       setUser(null);
       setFirebaseUser(null);
     } finally {
@@ -219,24 +193,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Update profile
   const updateProfile = async (data: Partial<UserDocument>): Promise<void> => {
     if (!user?.uid) return;
-    const updated = { ...user, ...data, updatedAt: new Date().toISOString() };
-    setUser(updated);
-
-    if (user.uid === DEMO_USER_UID) {
-      localStorage.setItem('worktrip_demo_user', JSON.stringify(updated));
-    } else {
+    try {
       await updateUserProfileService(user.uid, data);
+      setUser((prev) => (prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null));
+      toast.success('Profile updated');
+    } catch (err) {
+      console.error('[AuthContext] Update profile error:', err);
+      toast.error('Failed to update profile');
+      throw err;
     }
   };
 
   // Update preferences
   const updatePreferences = async (data: Partial<PreferencesDocument>): Promise<void> => {
     if (!user?.uid) return;
-    const updated = { ...(preferences || getDefaultPreferences()), ...data, updatedAt: new Date().toISOString() };
-    setPreferences(updated);
-
-    if (user.uid !== DEMO_USER_UID) {
+    try {
       await updateUserPreferencesService(user.uid, data);
+      setPreferences((prev) => (prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null));
+      toast.success('Preferences updated');
+    } catch (err) {
+      console.error('[AuthContext] Update preferences error:', err);
+      toast.error('Failed to update preferences');
+      throw err;
     }
   };
 

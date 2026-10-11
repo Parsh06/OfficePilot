@@ -28,12 +28,12 @@ export const AddTripDrawer: React.FC<AddTripDrawerProps> = ({ open, onOpenChange
     resolver: zodResolver(TripSchema),
     defaultValues: {
       title: '',
-      origin: 'San Francisco (SFO)',
-      destination: 'Seattle (SEA)',
-      officeLocation: 'Seattle HQ — Lake Union Campus',
+      origin: 'Mumbai (BOM)',
+      destination: 'Pune (PNQ)',
+      officeLocation: 'Pune Technology Center',
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0],
-      estimatedCost: 950,
+      estimatedCost: 3500,
       notes: '',
     },
   });
@@ -114,7 +114,7 @@ export const AddTripDrawer: React.FC<AddTripDrawerProps> = ({ open, onOpenChange
             </label>
             <Input
               {...register('origin')}
-              placeholder="e.g. San Francisco (SFO)"
+              placeholder="e.g. Mumbai (BOM) / Bengaluru"
             />
             {errors.origin && (
               <p className="text-xs text-rose-400">{errors.origin.message}</p>
@@ -127,7 +127,7 @@ export const AddTripDrawer: React.FC<AddTripDrawerProps> = ({ open, onOpenChange
             </label>
             <Input
               {...register('destination')}
-              placeholder="e.g. Seattle (SEA)"
+              placeholder="e.g. Pune (PNQ) / Hyderabad"
             />
             {errors.destination && (
               <p className="text-xs text-rose-400">{errors.destination.message}</p>
@@ -142,7 +142,7 @@ export const AddTripDrawer: React.FC<AddTripDrawerProps> = ({ open, onOpenChange
           </label>
           <Input
             {...register('officeLocation')}
-            placeholder="e.g. Seattle HQ — Lake Union Campus"
+            placeholder="e.g. Pune Technology Center — Hinjawadi"
           />
           {errors.officeLocation && (
             <p className="text-xs text-rose-400">{errors.officeLocation.message}</p>

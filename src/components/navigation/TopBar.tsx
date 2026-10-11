@@ -23,7 +23,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   const notifications = useNotificationStore((s) => s.notifications);
   const unreadCount = React.useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
-  const displayName = user?.displayName || profile.name;
+  const displayName = user?.displayName || profile.name || 'My Account';
   const displayEmail = user?.email || profile.email;
   const displayPhoto = user?.photoURL || profile.avatarUrl;
 

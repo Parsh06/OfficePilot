@@ -64,126 +64,11 @@ interface TripState {
   }) => Promise<TripBlock[]>;
 }
 
-const defaultUserId = 'demo-traveler-uid-001';
-const defaultInitialProfile = createDefaultTravelProfile(defaultUserId, 'Pune Office Commute', 'Mumbai', 'Pune');
-
-const initialMockTrips: TripBlock[] = [
-  {
-    id: 'trip_demo_101',
-    userId: defaultUserId,
-    title: '3-Day Pune Architecture Sprint',
-    startDate: '2026-10-13',
-    endDate: '2026-10-15',
-    origin: 'Mumbai',
-    destination: 'Pune HQ',
-    officeLocation: 'Pune HQ',
-    purpose: 'Core Platform Engineering Offsite',
-    workDays: ['2026-10-13', '2026-10-14', '2026-10-15'],
-    nightsCount: 2,
-    travelSegments: [
-      {
-        id: 'seg_1',
-        label: 'Mumbai Home to Dadar Station',
-        mode: 'cab',
-        origin: 'Mumbai Home',
-        destination: 'Dadar Station',
-        estimatedCost: 350,
-        estimatedDurationMinutes: 35,
-        sequence: 1,
-        direction: 'OUTBOUND',
-        active: true,
-      },
-      {
-        id: 'seg_2',
-        label: 'Vande Bharat Express to Pune',
-        mode: 'train',
-        origin: 'Dadar Station',
-        destination: 'Pune Junction',
-        estimatedCost: 850,
-        estimatedDurationMinutes: 180,
-        sequence: 2,
-        direction: 'OUTBOUND',
-        active: true,
-        provider: 'Indian Railways (Vande Bharat)',
-      },
-      {
-        id: 'seg_3',
-        label: 'Pune Station to Tech Park',
-        mode: 'auto',
-        origin: 'Pune Junction',
-        destination: 'Pune HQ',
-        estimatedCost: 200,
-        estimatedDurationMinutes: 25,
-        sequence: 3,
-        direction: 'OUTBOUND',
-        active: true,
-      },
-      {
-        id: 'seg_4',
-        label: 'Pune HQ to Pune Station',
-        mode: 'auto',
-        origin: 'Pune HQ',
-        destination: 'Pune Junction',
-        estimatedCost: 200,
-        estimatedDurationMinutes: 25,
-        sequence: 1,
-        direction: 'RETURN',
-        active: true,
-      },
-      {
-        id: 'seg_5',
-        label: 'Return Express to Mumbai',
-        mode: 'train',
-        origin: 'Pune Junction',
-        destination: 'Dadar Station',
-        estimatedCost: 850,
-        estimatedDurationMinutes: 180,
-        sequence: 2,
-        direction: 'RETURN',
-        active: true,
-        provider: 'Indian Railways (Vande Bharat)',
-      },
-      {
-        id: 'seg_6',
-        label: 'Station to Mumbai Home',
-        mode: 'cab',
-        origin: 'Dadar Station',
-        destination: 'Mumbai Home',
-        estimatedCost: 350,
-        estimatedDurationMinutes: 35,
-        sequence: 3,
-        direction: 'RETURN',
-        active: true,
-      },
-    ],
-    accommodation: {
-      id: 'acc_demo_1',
-      type: 'hotel',
-      name: 'The Ritz Executive Suites Pune',
-      location: 'Pune Hinjawadi Phase 1',
-      nightlyCost: 3800,
-      checkIn: '2026-10-13',
-      checkOut: '2026-10-15',
-      nights: 2,
-      totalCost: 7600,
-      notes: 'Reserved near client office hub',
-    },
-    plannedTravelCost: 2800,
-    plannedStayCost: 7600,
-    plannedCost: 10400,
-    status: 'CONFIRMED',
-    aiOptimizationScore: 94,
-    aiSavingsEstimate: 1450,
-    createdAt: '2026-10-01T00:00:00Z',
-    updatedAt: '2026-10-01T00:00:00Z',
-  },
-];
-
 export const useTripStore = create<TripState>((set, get) => ({
-  userId: defaultUserId,
-  trips: initialMockTrips,
-  travelProfiles: [defaultInitialProfile],
-  activeProfile: defaultInitialProfile,
+  userId: '',
+  trips: [],
+  travelProfiles: [],
+  activeProfile: null,
   selectedTripId: null,
   filterStatus: 'ALL',
   isLoading: false,
@@ -201,12 +86,12 @@ export const useTripStore = create<TripState>((set, get) => ({
         getTrips(userId),
       ]);
 
-      const active = profiles.find((p) => p.isDefault) || profiles[0] || defaultInitialProfile;
+      const active = profiles.find((p) => p.isDefault) || profiles[0] || null;
 
       set({
-        travelProfiles: profiles.length > 0 ? profiles : [defaultInitialProfile],
+        travelProfiles: profiles,
         activeProfile: active,
-        trips: tripsList.length > 0 ? tripsList : get().trips,
+        trips: tripsList,
         isLoading: false,
       });
     } catch (err) {
@@ -241,7 +126,9 @@ export const useTripStore = create<TripState>((set, get) => ({
     };
 
     set({ trips: [fullTrip, ...trips.filter((t) => t.id !== fullTrip.id)] });
-    persistTrip(userId, fullTrip).catch((err) => console.warn('[tripStore] Persist error:', err));
+    if (userId) {
+      persistTrip(userId, fullTrip).catch((err) => console.warn('[tripStore] Persist error:', err));
+    }
     return fullTrip as any;
   },
 
@@ -268,7 +155,9 @@ export const useTripStore = create<TripState>((set, get) => ({
       merged.plannedCost = breakdown.totalPlannedCost;
     }
 
-    await persistTrip(userId, merged);
+    if (userId) {
+      await persistTrip(userId, merged);
+    }
     set({
       trips: trips.map((t) => (t.id === id ? merged : t)),
     });
@@ -276,7 +165,9 @@ export const useTripStore = create<TripState>((set, get) => ({
 
   deleteTrip: async (id) => {
     const { userId, trips, selectedTripId } = get();
-    await persistDeleteTrip(userId, id);
+    if (userId) {
+      await persistDeleteTrip(userId, id);
+    }
     set({
       trips: trips.filter((t) => t.id !== id),
       selectedTripId: selectedTripId === id ? null : selectedTripId,

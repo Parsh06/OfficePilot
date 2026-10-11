@@ -29,20 +29,24 @@ import {
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const schedules = useScheduleStore((s) => s.schedules);
+  const getResolvedRange = useScheduleStore((s) => s.getResolvedRange);
   const exceptions = useScheduleStore((s) => s.exceptions);
   const trips = useTripStore((s) => s.trips);
   const expenses = useExpenseStore((s) => s.expenses);
   const budget = useSettingsStore((s) => s.profile.monthlyTravelBudget) || 25000;
 
-  // Convert legacy schedules to workDays format
+  // Derive workDays from resolved active month schedule
   const workDays = useMemo(() => {
-    return schedules.map((s: any) => ({
-      date: s.date,
-      scheduleType: s.mode,
-      notes: s.notes,
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const resolvedRange = getResolvedRange(start, end);
+    return resolvedRange.map((r) => ({
+      date: r.date,
+      scheduleType: r.resolvedMode,
+      notes: r.appliedException?.reason,
     }));
-  }, [schedules]);
+  }, [getResolvedRange]);
 
   // Run deterministic aggregation engine
   const dashboardData = useMemo(() => {
@@ -403,30 +407,37 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-2.5">
-            {insights.slice(0, 3).map((ins) => (
-              <div
-                key={ins.id}
-                className="p-3.5 rounded-xl border border-purple-500/20 bg-gradient-to-r from-purple-950/20 via-[#101222] to-[#0c0e18] space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-purple-400" />
-                    {ins.title}
-                  </span>
-                  {ins.impactAmount && (
-                    <span className="text-[11px] font-mono font-bold text-emerald-400">
-                      {formatCurrency(ins.impactAmount)}
+            {insights.length === 0 ? (
+              <div className="p-5 rounded-xl border border-slate-800 bg-[#0e101a] text-xs text-slate-400 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                No spending data recorded yet. Log work trips and expenses to view smart batching insights.
+              </div>
+            ) : (
+              insights.slice(0, 3).map((ins) => (
+                <div
+                  key={ins.id}
+                  className="p-3.5 rounded-xl border border-purple-500/20 bg-gradient-to-r from-purple-950/20 via-[#101222] to-[#0c0e18] space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-purple-400" />
+                      {ins.title}
                     </span>
+                    {ins.impactAmount && (
+                      <span className="text-[11px] font-mono font-bold text-emerald-400">
+                        {formatCurrency(ins.impactAmount)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300">{ins.summary}</p>
+                  {ins.suggestedAction && (
+                    <p className="text-[11px] text-purple-300/90 font-medium">
+                      Recommendation: {ins.suggestedAction}
+                    </p>
                   )}
                 </div>
-                <p className="text-xs text-slate-300">{ins.summary}</p>
-                {ins.suggestedAction && (
-                  <p className="text-[11px] text-purple-300/90 font-medium">
-                    Recommendation: {ins.suggestedAction}
-                  </p>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

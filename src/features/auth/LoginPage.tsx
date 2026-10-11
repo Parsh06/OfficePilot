@@ -7,11 +7,8 @@ import {
   AlertCircle, 
   Sparkles, 
   Loader2, 
-  Layers, 
   CalendarDays, 
-  Lock, 
-  Zap,
-  ArrowRight
+  Zap
 } from 'lucide-react';
 import { useAuth } from './useAuth';
 

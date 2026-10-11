@@ -31,7 +31,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       fetchSchedule(user.uid);
       fetchTrips(user.uid);
       fetchExpenses(user.uid);
-      fetchNotifications(user.uid);
+      fetchNotifications();
       updateProfile({
         id: user.uid,
         name: user.displayName || 'Corporate Traveler',

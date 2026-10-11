@@ -9,7 +9,6 @@ import type {
 } from '@/lib/expenseEngine';
 import {
   generatePlannedExpensesForTrip,
-  createDefaultExpenseTemplates,
   calculateExpenseSummary,
   calculateExpenseVariance,
 } from '@/lib/expenseEngine';
@@ -79,111 +78,6 @@ interface ExpenseState {
   getExpenseById: (id: string) => ExpenseRecord | undefined;
 }
 
-const defaultUserId = 'demo-traveler-uid-001';
-
-const initialDefaultExpenses: ExpenseRecord[] = [
-  {
-    id: 'exp_init_1',
-    userId: defaultUserId,
-    date: '2026-10-13',
-    title: 'Outbound: Vande Bharat Express (Mumbai ➔ Pune)',
-    category: 'TRAVEL',
-    subcategory: 'train',
-    plannedAmount: 850,
-    actualAmount: 850,
-    variance: 0,
-    currency: 'INR',
-    paymentMethod: 'UPI',
-    reimbursable: true,
-    status: 'CONFIRMED',
-    source: 'generated',
-    tripId: 'trip_demo_101',
-    notes: 'Confirmed morning departure',
-    createdAt: '2026-10-01T00:00:00Z',
-    updatedAt: '2026-10-01T00:00:00Z',
-  },
-  {
-    id: 'exp_init_2',
-    userId: defaultUserId,
-    date: '2026-10-13',
-    title: 'Breakfast & Morning Coffee',
-    category: 'FOOD',
-    subcategory: 'breakfast',
-    plannedAmount: 120,
-    actualAmount: 95,
-    variance: -25, // Saved ₹25
-    currency: 'INR',
-    paymentMethod: 'UPI',
-    reimbursable: true,
-    status: 'CONFIRMED',
-    source: 'generated',
-    tripId: 'trip_demo_101',
-    notes: 'South Indian breakfast at station',
-    createdAt: '2026-10-01T00:00:00Z',
-    updatedAt: '2026-10-01T00:00:00Z',
-  },
-  {
-    id: 'exp_init_3',
-    userId: defaultUserId,
-    date: '2026-10-13',
-    title: 'Client Lunch with Core Architecture Team',
-    category: 'FOOD',
-    subcategory: 'lunch',
-    plannedAmount: 180,
-    actualAmount: 220,
-    variance: 40, // ₹40 over budget
-    currency: 'INR',
-    paymentMethod: 'CREDIT_CARD',
-    reimbursable: true,
-    status: 'CONFIRMED',
-    source: 'user',
-    tripId: 'trip_demo_101',
-    notes: 'Team meal at cafeteria',
-    createdAt: '2026-10-01T00:00:00Z',
-    updatedAt: '2026-10-01T00:00:00Z',
-  },
-  {
-    id: 'exp_init_4',
-    userId: defaultUserId,
-    date: '2026-10-13',
-    title: 'The Ritz Executive Suites (Night 1)',
-    category: 'ACCOMMODATION',
-    subcategory: 'hotel',
-    plannedAmount: 3800,
-    actualAmount: 3800,
-    variance: 0,
-    currency: 'INR',
-    paymentMethod: 'CORPORATE_CARD',
-    reimbursable: true,
-    status: 'CONFIRMED',
-    source: 'generated',
-    tripId: 'trip_demo_101',
-    notes: 'Hinjawadi Tech Park Suite',
-    createdAt: '2026-10-01T00:00:00Z',
-    updatedAt: '2026-10-01T00:00:00Z',
-  },
-  {
-    id: 'exp_init_5',
-    userId: defaultUserId,
-    date: '2026-10-14',
-    title: 'Evening Snacks & Tea',
-    category: 'FOOD',
-    subcategory: 'snacks',
-    plannedAmount: 80,
-    actualAmount: undefined, // Pending actual entry
-    variance: 0,
-    currency: 'INR',
-    paymentMethod: 'UPI',
-    reimbursable: true,
-    status: 'PLANNED',
-    source: 'generated',
-    tripId: 'trip_demo_101',
-    notes: 'Planned evening snack break',
-    createdAt: '2026-10-01T00:00:00Z',
-    updatedAt: '2026-10-01T00:00:00Z',
-  },
-];
-
 const initialFilters: ExpenseFilterState = {
   category: 'ALL',
   status: 'ALL',
@@ -192,9 +86,9 @@ const initialFilters: ExpenseFilterState = {
 };
 
 export const useExpenseStore = create<ExpenseState>((set, get) => ({
-  userId: defaultUserId,
-  expenses: initialDefaultExpenses,
-  templates: createDefaultExpenseTemplates(defaultUserId),
+  userId: '',
+  expenses: [],
+  templates: [],
   filters: initialFilters,
   selectedExpenseId: null,
   isLoading: false,
@@ -228,8 +122,8 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       ]);
 
       set({
-        expenses: remoteExpenses.length > 0 ? remoteExpenses : get().expenses,
-        templates: remoteTemplates.length > 0 ? remoteTemplates : get().templates,
+        expenses: remoteExpenses,
+        templates: remoteTemplates,
         isLoading: false,
       });
     } catch (err) {
@@ -276,9 +170,11 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     };
 
     set({ expenses: [fullRecord, ...expenses] });
-    saveExpense(userId, fullRecord).catch((err) =>
-      console.warn('[expenseStore] Persist error:', err)
-    );
+    if (userId) {
+      saveExpense(userId, fullRecord).catch((err) =>
+        console.warn('[expenseStore] Persist error:', err)
+      );
+    }
 
     return fullRecord;
   },
@@ -311,7 +207,9 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       expenses: expenses.map((e) => (e.id === id ? merged : e)),
     });
 
-    await saveExpense(userId, merged);
+    if (userId) {
+      await saveExpense(userId, merged);
+    }
   },
 
   markActual: async (id, actualAmount, paymentMethod) => {
@@ -333,7 +231,9 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       expenses: expenses.map((e) => (e.id === id ? updated : e)),
     });
 
-    await saveExpense(userId, updated);
+    if (userId) {
+      await saveExpense(userId, updated);
+    }
   },
 
   deleteExpense: async (id) => {
@@ -342,7 +242,9 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       expenses: expenses.filter((e) => e.id !== id),
       selectedExpenseId: selectedExpenseId === id ? null : selectedExpenseId,
     });
-    await persistDeleteExpense(userId, id);
+    if (userId) {
+      await persistDeleteExpense(userId, id);
+    }
   },
 
   generateExpensesFromTrip: async (trip: TripBlock) => {
@@ -350,7 +252,9 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     const newGenerated = generatePlannedExpensesForTrip(trip, templates, expenses);
 
     if (newGenerated.length > 0) {
-      await batchSaveExpenses(userId, newGenerated);
+      if (userId) {
+        await batchSaveExpenses(userId, newGenerated);
+      }
       set({ expenses: [...newGenerated, ...expenses] });
     }
 

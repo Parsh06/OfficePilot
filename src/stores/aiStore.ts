@@ -49,36 +49,11 @@ const initialWelcomeMessage: AIMessage = {
   ],
 };
 
-const initialRecommendations: AIRecommendation[] = [
-  {
-    id: 'rec_batch_wfo',
-    title: 'Batch WFO Days to Save Transit',
-    description: 'Grouping Tuesday & Wednesday WFO days into a 2-day sprint with corporate PG saves ₹1,850 in mid-week transit.',
-    type: 'COST_SAVING',
-    potentialSavings: 1850,
-    impactLevel: 'HIGH',
-    confidenceScore: 95,
-    actionLabel: 'Apply Batching',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'rec_early_train',
-    title: 'Vande Bharat Off-Peak Booking',
-    description: 'Booking the morning Vande Bharat express 3 days in advance secures dynamic fare tier saving ₹350.',
-    type: 'TRAVEL_DEAL',
-    potentialSavings: 350,
-    impactLevel: 'MEDIUM',
-    confidenceScore: 91,
-    actionLabel: 'View Schedule',
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export const useAIStore = create<AIState>((set, get) => ({
   mode: 'ASK',
   autonomySetting: 'BALANCED',
   messages: [initialWelcomeMessage],
-  recommendations: initialRecommendations,
+  recommendations: [],
   isLoading: false,
   isExecutingAction: false,
   activeError: null,

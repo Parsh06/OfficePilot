@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { NotificationItem } from '@/types';
 import { apiClient } from '@/lib/api/client';
-import { initialNotifications } from './mockData';
 
 interface NotificationState {
   notifications: NotificationItem[];
@@ -18,7 +17,7 @@ interface NotificationState {
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
-  notifications: initialNotifications,
+  notifications: [],
   isLoading: false,
   pushPermissionStatus:
     typeof window !== 'undefined' && 'Notification' in window

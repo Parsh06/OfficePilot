@@ -275,7 +275,7 @@ export const SettingsPage: React.FC = () => {
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Home Base City / Airport
                 </label>
-                <Input {...register('homeCity')} placeholder="e.g. San Francisco (SFO)" />
+                <Input {...register('homeCity')} placeholder="e.g. Mumbai (BOM) / Bengaluru" />
                 {errors.homeCity && <p className="text-xs text-rose-400">{errors.homeCity.message}</p>}
               </div>
 
@@ -283,7 +283,7 @@ export const SettingsPage: React.FC = () => {
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Primary Office Campus
                 </label>
-                <Input {...register('primaryOffice')} placeholder="e.g. Seattle HQ — Lake Union Campus" />
+                <Input {...register('primaryOffice')} placeholder="e.g. Pune Technology Center — Hinjawadi" />
                 {errors.primaryOffice && <p className="text-xs text-rose-400">{errors.primaryOffice.message}</p>}
               </div>
 

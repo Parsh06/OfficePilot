@@ -63,45 +63,9 @@ interface ScheduleState {
 }
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
-  userId: 'demo-traveler-uid-001',
-  normalSchedule: createDefaultSchedule('demo-traveler-uid-001'),
-  exceptions: [
-    {
-      id: 'ex_default_01',
-      userId: 'demo-traveler-uid-001',
-      date: '2026-10-13',
-      type: 'HOLIDAY',
-      resolvedMode: 'HOLIDAY',
-      holidayName: 'Company Observance Day',
-      source: 'SYSTEM',
-      createdAt: '2026-01-01',
-    },
-    {
-      id: 'ex_default_02',
-      userId: 'demo-traveler-uid-001',
-      date: '2026-10-23',
-      type: 'LEAVE',
-      resolvedMode: 'LEAVE',
-      leaveType: 'CASUAL',
-      reason: 'Personal Family Function',
-      source: 'USER',
-      status: 'APPROVED',
-      createdAt: '2026-01-01',
-    },
-    {
-      id: 'ex_default_03',
-      userId: 'demo-traveler-uid-001',
-      date: '2026-10-15',
-      type: 'TRAVEL',
-      resolvedMode: 'TRAVEL',
-      reason: 'Outbound SFO $\\rightarrow$ SEA Flight',
-      source: 'USER',
-      estimatedCost: 4500,
-      hasOvernightStay: true,
-      tripId: 'trip_sea_01',
-      createdAt: '2026-01-01',
-    },
-  ],
+  userId: '',
+  normalSchedule: createDefaultSchedule(''),
+  exceptions: [],
   selectedDate: formatDate(new Date()),
   viewMode: 'month',
   currentMonth: new Date(),
@@ -142,7 +106,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
       set({
         normalSchedule: mergedSchedule,
-        exceptions: exceptionsList.length > 0 ? exceptionsList : get().exceptions,
+        exceptions: exceptionsList,
         isLoading: false,
       });
     } catch (err) {
@@ -160,15 +124,27 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     set({ normalSchedule: updated });
-    await saveWorkSchedule(userId, updated);
+    if (userId) {
+      await saveWorkSchedule(userId, updated);
+    }
   },
 
   addOrUpdateException: async (exceptionData) => {
     const { userId, exceptions } = get();
-    const saved = await saveScheduleException(userId, {
-      ...exceptionData,
-      userId,
-    });
+    let saved: ScheduleException;
+    if (userId) {
+      saved = await saveScheduleException(userId, {
+        ...exceptionData,
+        userId,
+      });
+    } else {
+      saved = {
+        ...exceptionData,
+        id: exceptionData.id || `local_ex_${Date.now()}`,
+        userId: '',
+        createdAt: new Date().toISOString(),
+      } as ScheduleException;
+    }
 
     const filtered = exceptions.filter((e) => e.id !== saved.id && e.date !== saved.date);
     set({ exceptions: [...filtered, saved] });
@@ -177,13 +153,17 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
   removeExceptionById: async (exceptionId: string) => {
     const { userId, exceptions } = get();
-    await deleteScheduleException(userId, exceptionId);
+    if (userId) {
+      await deleteScheduleException(userId, exceptionId);
+    }
     set({ exceptions: exceptions.filter((e) => e.id !== exceptionId) });
   },
 
   resetDayToNormal: async (date: string) => {
     const { userId, exceptions } = get();
-    await deleteExceptionsByDate(userId, date);
+    if (userId) {
+      await deleteExceptionsByDate(userId, date);
+    }
     set({ exceptions: exceptions.filter((e) => e.date !== date) });
   },
 
@@ -205,13 +185,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     return calculateScheduleMetrics(days);
   },
 
-  schedules: [
-    { id: '1', date: '2026-10-12', mode: 'WFH', location: 'Home Office' },
-    { id: '2', date: '2026-10-13', mode: 'WFO', location: 'Seattle HQ' },
-    { id: '3', date: '2026-10-14', mode: 'WFO', location: 'Seattle HQ' },
-    { id: '4', date: '2026-10-15', mode: 'WFO', location: 'Seattle HQ' },
-    { id: '5', date: '2026-10-16', mode: 'WFH', location: 'Home Office' },
-  ],
+  schedules: [],
 
   setDayMode: (date, mode, notes, location) => {
     const { exceptions } = get();
