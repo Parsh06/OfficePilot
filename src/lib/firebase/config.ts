@@ -8,12 +8,12 @@ import { getFirestore, type Firestore } from 'firebase/firestore';
  * No server secrets, service accounts or Admin credentials are exposed.
  */
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoWorkTripMockKeyForLocalDev123',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'worktrip-ai-dev.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'worktrip-ai-dev',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'worktrip-ai-dev.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789012',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789012:web:abcdef1234567890',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
 };
 
@@ -23,8 +23,7 @@ export const firebaseConfig = {
 export const isFirebaseConfigured = (): boolean => {
   return Boolean(
     import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-    !import.meta.env.VITE_FIREBASE_API_KEY.includes('Demo')
+    import.meta.env.VITE_FIREBASE_PROJECT_ID
   );
 };
 

@@ -7,7 +7,7 @@
 | `VITE_APP_NAME` | Client | Yes | UI Title & Branding | `WorkTrip AI` |
 | `VITE_APP_ENV` | Client | Yes | Runtime Mode | `production` / `development` |
 | `VITE_API_BASE_URL` | Client | No | Custom API Host | Blank for same-domain serverless |
-| `VITE_FIREBASE_API_KEY` | Client | Yes | Firebase Web Client Key | `AIzaSy...` |
+| `VITE_FIREBASE_API_KEY` | Client | Yes | Firebase Web Client Key | `client-key-string` |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Client | Yes | Auth Domain for OAuth | `project.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | Client | Yes | GCP Project ID | `worktrip-ai-prod` |
 | `VITE_FIREBASE_STORAGE_BUCKET`| Client | Yes | Storage Bucket URI | `worktrip-ai-prod.appspot.com` |
