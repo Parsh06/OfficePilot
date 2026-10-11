@@ -28,7 +28,7 @@ export async function getAuthToken(): Promise<string | null> {
   }
 
   // Check demo user in localStorage for sandbox mode
-  const demoStored = localStorage.getItem('worktrip_demo_user');
+  const demoStored = localStorage.getItem('officepilot_demo_user') || localStorage.getItem('worktrip_demo_user');
   if (demoStored) {
     try {
       const parsed = JSON.parse(demoStored);

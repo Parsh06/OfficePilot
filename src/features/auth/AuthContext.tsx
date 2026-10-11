@@ -52,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       localStorage.removeItem('worktrip_demo_user');
+      localStorage.removeItem('officepilot_demo_user');
     } catch {
       // Ignore
     }
@@ -75,6 +76,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Subscribe to Firebase Auth state
   useEffect(() => {
+    if (!isFirebaseConfigured()) {
+      setUser(null);
+      setFirebaseUser(null);
+      setPreferences(null);
+      setIsLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentFirebaseUser) => {
       setFirebaseUser(currentFirebaseUser);
       if (currentFirebaseUser) {
@@ -169,6 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       localStorage.removeItem('worktrip_demo_user');
+      localStorage.removeItem('officepilot_demo_user');
       await fbSignOut(auth);
       setUser(null);
       setFirebaseUser(null);
