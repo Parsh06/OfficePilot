@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #090a0f;
+    --surface: #10131c;
+    --surface-elevated: #161b27;
+    --surface-hover: #1e2435;
+    --surface-active: #252c40;
+    
+    --border: #23293c;
+    --border-subtle: #171b29;
+    --border-glow: rgba(99, 102, 241, 0.35);
+
+    --foreground: #f8fafc;
+    --foreground-muted: #94a3b8;
+    --foreground-dim: #64748b;
+
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-foreground: #ffffff;
+
+    --ai: #8b5cf6;
+    --ai-glow: rgba(139, 92, 246, 0.25);
+    
+    --wfo: #3b82f6;
+    --wfh: #10b981;
+    --leave: #a855f7;
+    --holiday: #f43f5e;
+    --travel: #f59e0b;
+
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #38bdf8;
+
+    --radius-sm: 0.5rem;
+    --radius-md: 0.875rem;
+    --radius-lg: 1.125rem;
+    --radius-xl: 1.5rem;
+  }
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-glow: var(--border-glow);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-dim: var(--foreground-dim);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-ai: var(--ai);
+  --color-wfo: var(--wfo);
+  --color-wfh: var(--wfh);
+  --color-leave: var(--leave);
+  --color-holiday: var(--holiday);
+  --color-travel: var(--travel);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #23293c;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333b54;
+}
+
+/* AI Glow and Glass utilities */
+.ai-glow-border {
+  position: relative;
+}
+.ai-glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glow-card {
+  background: radial-gradient(1200px circle at top center, rgba(99, 102, 241, 0.05), transparent 40%), #10131c;
+}

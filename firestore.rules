@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserDoc(userId) {
+      return request.resource.data.uid == userId
+        && request.resource.data.email is string
+        && request.resource.data.displayName is string;
+    }
+
+    // Explicitly deny access to any un-scoped root collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Root-level work schedules scoped by userId: workSchedules/{userId}
+    match /workSchedules/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // User document: users/{userId}
+    match /users/{userId} {
+      // Users can only read and write their own profile
+      allow read: if isOwner(userId);
+      
+      // On create, ensure the UID in the document payload matches the authenticated UID
+      allow create: if isOwner(userId) 
+        && isValidUserDoc(userId)
+        && request.resource.data.createdAt is string;
+
+      // On update, users cannot alter the immutable uid or createdAt fields
+      allow update: if isOwner(userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Deletion is strictly reserved for user account deletion
+      allow delete: if isOwner(userId);
+
+      // Preferences subcollection: users/{userId}/preferences/{prefId}
+      match /preferences/{prefId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Work schedules subcollection: users/{userId}/workSchedules/{scheduleId}
+      match /workSchedules/{scheduleId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Expense defaults subcollection: users/{userId}/expenseDefaults/{docId}
+      match /expenseDefaults/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Travel profiles subcollection: users/{userId}/travelProfiles/{profileId}
+      match /travelProfiles/{profileId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Accommodation profiles subcollection: users/{userId}/accommodationProfiles/{accId}
+      match /accommodationProfiles/{accId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Notification preferences subcollection: users/{userId}/notificationPreferences/{prefId}
+      match /notificationPreferences/{prefId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Schedule exceptions subcollection: users/{userId}/scheduleExceptions/{exceptionId}
+      match /scheduleExceptions/{exceptionId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
