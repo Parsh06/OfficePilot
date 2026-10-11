@@ -152,6 +152,8 @@ export function simulateWhatIfScenario(params: {
       includeStay: false,
     }));
   } else if (proposedWfoDates.length >= 2) {
+    const accType = request.accommodationType || 'hotel';
+    const nightly = request.nightlyCost || (accType === 'PG' ? 1800 : accType === 'guest_house' ? 2000 : 2800);
     // Group contiguous block
     proposedTripsConfig = [
       {
@@ -159,8 +161,8 @@ export function simulateWhatIfScenario(params: {
         endDate: proposedWfoDates[proposedWfoDates.length - 1],
         wfoDates: proposedWfoDates,
         includeStay: true,
-        nightlyCost: 2500,
-        accommodationType: 'hotel',
+        nightlyCost: nightly,
+        accommodationType: accType,
       },
     ];
   } else {

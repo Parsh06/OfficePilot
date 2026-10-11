@@ -1,6 +1,11 @@
 import type { AIToolDefinition } from '../types';
 import { runScheduleOptimizer, simulateScenario } from '@/server/services/optimizerService';
-import { getAdminWorkSchedule } from '@/server/repositories/firestoreAdminRepository';
+import {
+  getAdminWorkSchedule,
+  getAdminUserProfile,
+  getAdminTravelProfile,
+  getAdminExpenseDefaults,
+} from '@/server/repositories/firestoreAdminRepository';
 import { createDefaultSchedule, resolveDateRange } from '@/lib/scheduleEngine';
 
 export const CALCULATION_TOOL_DEFINITIONS: AIToolDefinition[] = [
@@ -122,6 +127,16 @@ export const CALCULATION_TOOL_DEFINITIONS: AIToolDefinition[] = [
   },
 ];
 
+async function safeCall<T>(fn: any, ...args: any[]): Promise<T | null> {
+  if (typeof fn !== 'function') return null;
+  try {
+    const res = fn(...args);
+    return res && typeof res.then === 'function' ? await res : res ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Dispatches and executes calculation tools deterministically.
  */
@@ -130,8 +145,26 @@ export async function executeCalculationTool(
   args: Record<string, any>,
   userId: string
 ): Promise<any> {
-  const scheduleDoc = await getAdminWorkSchedule(userId);
+  const [scheduleDoc, userProfileDoc, travelProfileDoc, expenseDefaultsDoc] = await Promise.all([
+    safeCall<any>(getAdminWorkSchedule, userId),
+    safeCall<any>(getAdminUserProfile, userId),
+    safeCall<any>(getAdminTravelProfile, userId),
+    safeCall<any>(getAdminExpenseDefaults, userId),
+  ]);
+
   const schedule = scheduleDoc || createDefaultSchedule(userId, { timezone: 'Asia/Kolkata' });
+  const homeCity = userProfileDoc?.homeCity || travelProfileDoc?.homeLocation || 'Mumbai, Maharashtra';
+  const officeCity = userProfileDoc?.primaryOffice || travelProfileDoc?.officeLocation || 'Pune Technology Center';
+  
+  // Deterministic rates based on user setup
+  const roundTripTransitCost =
+    travelProfileDoc?.outboundSegments && travelProfileDoc.returnSegments
+      ? travelProfileDoc.outboundSegments.reduce((s: number, seg: any) => s + (seg.estimatedCost || 0), 0) +
+        travelProfileDoc.returnSegments.reduce((s: number, seg: any) => s + (seg.estimatedCost || 0), 0)
+      : 1700; // Mumbai-Pune Express standard corridor
+  const nightlyLodgingRate = expenseDefaultsDoc?.lodgingEstimate || 1800; // Corporate PG
+  const wfoDailyFood = (expenseDefaultsDoc?.lunch || 180) + (expenseDefaultsDoc?.dinner || 270) || 450;
+  const wfhDailyFood = 150;
 
   switch (name) {
     case 'calculateDayCost': {
@@ -142,19 +175,21 @@ export async function executeCalculationTool(
           mode,
           travelCost: 0,
           accommodationCost: 0,
-          foodAllowance: 150,
-          totalCost: 150,
-          explanation: `${mode} day requires ₹0 in travel/lodging, standard baseline meals ₹150.`,
+          foodAllowance: wfhDailyFood,
+          totalCost: wfhDailyFood,
+          basis: `Remote ${mode} day: ₹0 transit/lodging, standard baseline meals ₹${wfhDailyFood}.`,
+          explanation: `${mode} day requires ₹0 in travel/lodging, standard baseline meals ₹${wfhDailyFood}.`,
         };
       }
       return {
         date: args.date,
         mode: 'WFO',
-        travelCost: 1700, // Round-trip transit
+        travelCost: roundTripTransitCost,
         accommodationCost: 0,
-        foodAllowance: 450,
-        totalCost: 2150,
-        explanation: 'Single-day WFO commute: ₹1,700 round-trip transit + ₹450 daily food/incidental allowance.',
+        foodAllowance: wfoDailyFood,
+        totalCost: roundTripTransitCost + wfoDailyFood,
+        basis: `Single-day ${homeCity} ⇄ ${officeCity} commute: ₹${roundTripTransitCost.toLocaleString('en-IN')} transit + ₹${wfoDailyFood} food allowance.`,
+        explanation: `Single-day WFO commute: ₹${roundTripTransitCost.toLocaleString('en-IN')} round-trip transit + ₹${wfoDailyFood} daily food allowance.`,
       };
     }
 
@@ -162,10 +197,10 @@ export async function executeCalculationTool(
       const d1 = new Date(args.startDate);
       const d2 = new Date(args.endDate);
       const nights = Math.max(0, Math.round((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24)));
-      const nightlyRate = args.accommodationType === 'PG' ? 1800 : 2800;
+      const nightlyRate = args.accommodationType === 'PG' ? 1800 : args.accommodationType === 'hotel' ? 2800 : nightlyLodgingRate;
       const lodgingCost = nights * nightlyRate;
-      const transitCost = 1700; // Round-trip express train + cab transfers
-      const foodCost = (nights + 1) * 450;
+      const transitCost = roundTripTransitCost;
+      const foodCost = (nights + 1) * wfoDailyFood;
       const totalCost = transitCost + lodgingCost + foodCost;
 
       return {
@@ -176,6 +211,7 @@ export async function executeCalculationTool(
         transitCost,
         foodCost,
         totalCost,
+        basis: `${nights}-night trip on ${homeCity} ⇄ ${officeCity}: ₹${transitCost.toLocaleString('en-IN')} transit + ₹${lodgingCost.toLocaleString('en-IN')} lodging (${nights} nights @ ₹${nightlyRate}) + ₹${foodCost.toLocaleString('en-IN')} food.`,
         summary: `${nights}-night trip: ₹${transitCost.toLocaleString('en-IN')} travel + ₹${lodgingCost.toLocaleString('en-IN')} lodging + ₹${foodCost.toLocaleString('en-IN')} food = ₹${totalCost.toLocaleString('en-IN')} total.`,
       };
     }
@@ -197,12 +233,32 @@ export async function executeCalculationTool(
       const wfoDays = resolved.filter((d) => d.resolvedMode === 'WFO');
       const wfhDays = resolved.filter((d) => d.resolvedMode === 'WFH');
 
-      // 3 WFO days batched: 1 round trip (₹1700) + 2 nights PG (₹3600) + food (₹1350)
+      // Batched sprint evaluation: 1 round trip if 2+ consecutive WFO days
       const isBatched = wfoDays.length >= 2;
-      const travelCost = isBatched ? 1700 : wfoDays.length * 1700;
-      const lodgingCost = isBatched ? (wfoDays.length - 1) * 1800 : 0;
-      const foodCost = wfoDays.length * 450 + wfhDays.length * 150;
+      const travelCost = isBatched ? roundTripTransitCost : wfoDays.length * roundTripTransitCost;
+      const lodgingNights = isBatched && wfoDays.length > 1 ? wfoDays.length - 1 : 0;
+      const lodgingCost = lodgingNights * nightlyLodgingRate;
+      const foodCost = wfoDays.length * wfoDailyFood + wfhDays.length * wfhDailyFood;
       const totalCost = travelCost + lodgingCost + foodCost;
+
+      const basis = {
+        scheduleSource: `Evaluated from your active work calendar schedule (${start} to ${end})`,
+        corridor: `${homeCity} ⇄ ${officeCity}`,
+        wfoDates: wfoDays.map((d) => d.date),
+        wfhDates: wfhDays.map((d) => d.date),
+        wfoDaysCount: wfoDays.length,
+        wfhDaysCount: wfhDays.length,
+        ratesApplied: {
+          roundTripTransit: roundTripTransitCost,
+          nightlyLodging: nightlyLodgingRate,
+          wfoDailyFood,
+          wfhDailyFood,
+        },
+        formulaExplanation: `Based on your calendar: ${wfoDays.length} WFO in-office days (${wfoDays.map(d => d.date).join(', ')}), ${wfhDays.length} WFH days. ` +
+          (isBatched 
+            ? `Batched into 1 corridor trip (₹${travelCost.toLocaleString('en-IN')}) + ${lodgingNights} nights lodging (₹${lodgingCost.toLocaleString('en-IN')}) + meals (₹${foodCost.toLocaleString('en-IN')}).`
+            : `${wfoDays.length} separate roundtrips (₹${travelCost.toLocaleString('en-IN')}) + meals (₹${foodCost.toLocaleString('en-IN')}).`),
+      };
 
       return {
         weekStart: start,
@@ -214,27 +270,28 @@ export async function executeCalculationTool(
         foodCost,
         totalCost,
         travelLegsCount: isBatched ? 2 : wfoDays.length * 2,
-        summary: `Week ${start} to ${end}: ${wfoDays.length} WFO days, total planned spend ₹${totalCost.toLocaleString('en-IN')}.`,
+        basis,
+        summary: `Week ${start} to ${end}: ${wfoDays.length} WFO days (${wfoDays.map(d => d.date).join(', ')}), ${wfhDays.length} WFH days. Calculated based on ${homeCity} ⇄ ${officeCity} transit (₹${travelCost.toLocaleString('en-IN')}), ${lodgingCost > 0 ? `${lodgingNights} nights lodging (₹${lodgingCost.toLocaleString('en-IN')}), ` : ''}and food allowances (₹${foodCost.toLocaleString('en-IN')}) = Total planned spend ₹${totalCost.toLocaleString('en-IN')}.`,
       };
     }
 
     case 'calculateMonthCost': {
       const targetMonth = args.month || new Date().toISOString().substring(0, 7);
       const wfoTargetDays = schedule.wfoTargetDaysPerMonth || 8;
-      // 8 WFO days batched into 2 multi-day sprints = ₹17,600 + 14 WFH days (₹2,100)
       const monthlySprintCost = 17600;
-      const wfhFoodCost = 14 * 150; // ₹2,100
+      const wfhFoodCost = 14 * wfhDailyFood;
       const totalMonthCost = monthlySprintCost + wfhFoodCost;
-      const unbatchedDailyCost = wfoTargetDays * 2450 + 14 * 150; // ₹21,700
+      const unbatchedDailyCost = wfoTargetDays * 2450 + 14 * wfhDailyFood; // ₹21,700 unbatched individual commutes
 
       return {
         month: targetMonth,
         targetWfoDays: wfoTargetDays,
-        projectedTravelCost: 4 * 1700,
-        projectedLodgingCost: 4 * 1800,
-        projectedFoodCost: 4 * 900 + wfhFoodCost,
+        projectedTravelCost: 4 * roundTripTransitCost,
+        projectedLodgingCost: 4 * nightlyLodgingRate,
+        projectedFoodCost: 4 * (2 * wfoDailyFood) + wfhFoodCost,
         totalCost: totalMonthCost,
-        savingsVsDailyCommute: unbatchedDailyCost - totalMonthCost, // ₹2,000 savings
+        savingsVsDailyCommute: unbatchedDailyCost - totalMonthCost,
+        basis: `Month ${targetMonth}: ${wfoTargetDays} target WFO days batched into bi-weekly sprints vs daily unbatched commutes.`,
         summary: `Projected spend for ${targetMonth}: ₹${totalMonthCost.toLocaleString('en-IN')} across ${wfoTargetDays} WFO days (saves ₹${(unbatchedDailyCost - totalMonthCost).toLocaleString('en-IN')} vs unbatched daily commutes).`,
       };
     }

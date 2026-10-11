@@ -16,6 +16,8 @@ import type { AIChatRequest } from '@/lib/ai';
 vi.mock('@/server/repositories/firestoreAdminRepository', () => ({
   getAdminWorkSchedule: vi.fn(),
   getAdminTravelProfile: vi.fn(),
+  getAdminUserProfile: vi.fn(),
+  getAdminExpenseDefaults: vi.fn(),
   getAdminUserPreferences: vi.fn(),
   updateAdminUserPreferences: vi.fn(),
 }));

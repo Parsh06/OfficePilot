@@ -63,12 +63,16 @@ export interface ScenarioSimulationRequest {
   id?: string;
   name: string;
   hypothesis: string;
+  startDate?: string;
+  endDate?: string;
   dateOverrides: Array<{
     date: string;
     mode: 'WFO' | 'WFH' | 'HOLIDAY' | 'LEAVE';
     reason?: string;
   }>;
   stayOverride?: 'RETURN_HOME' | 'STAY_OVERNIGHT' | 'AUTO';
+  accommodationType?: 'hotel' | 'PG' | 'guest_house';
+  nightlyCost?: number;
   travelProfileId?: string;
 }
 

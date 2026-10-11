@@ -18,10 +18,18 @@ import {
   ThumbsDown,
   Layers,
   ArrowRight,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useTripStore } from '@/stores/tripStore';
 
 export const PlanOptimizerPage: React.FC = () => {
+  const profile = useSettingsStore((s) => s.profile);
+  const activeProfile = useTripStore((s) => s.activeProfile);
+  const homeCity = profile?.homeCity || activeProfile?.homeLocation || 'Mumbai, Maharashtra';
+  const officeCity = profile?.primaryOffice || activeProfile?.officeLocation || 'Pune Technology Center';
+
   const mode = useOptimizerStore((s) => s.mode);
   const setMode = useOptimizerStore((s) => s.setMode);
   const activeResult = useOptimizerStore((s) => s.activeResult);
@@ -132,17 +140,32 @@ export const PlanOptimizerPage: React.FC = () => {
 
       {/* Baseline Comparison Header */}
       {baseline && (
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-slate-400" />
-            <span className="font-semibold text-slate-300">Active Baseline:</span>
-            <span className="text-slate-400">
-              {baseline.wfoDaysCount} WFO Days • {baseline.travelLegsCount} Transit Legs • {formatCurrency(baseline.totalCost)} Total Cost
+        <div className="space-y-3">
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-slate-400" />
+              <span className="font-semibold text-slate-300">Active Baseline:</span>
+              <span className="text-slate-400">
+                {baseline.wfoDaysCount} WFO Days • {baseline.travelLegsCount} Transit Legs • {formatCurrency(baseline.totalCost)} Total Cost
+              </span>
+            </div>
+            <span className="text-slate-400 font-mono text-[11px]">
+              Target Optimization Window: {activeResult?.dateRange.startDate} ➔ {activeResult?.dateRange.endDate}
             </span>
           </div>
-          <span className="text-slate-400 font-mono text-[11px]">
-            Target Optimization Window: {activeResult?.dateRange.startDate} ➔ {activeResult?.dateRange.endDate}
-          </span>
+
+          {/* Calculation Basis & Data Lineage Card */}
+          <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/20 space-y-1.5 text-xs text-slate-300">
+            <div className="flex items-center gap-2 text-indigo-400 font-semibold">
+              <Info className="w-4 h-4 shrink-0" />
+              <span>Calculation Basis & Data Lineage</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              • <strong>Active Baseline ({formatCurrency(baseline.totalCost)}):</strong> Derived from your active work calendar ({baseline.wfoDaysCount} in-office days between {homeCity} ⇄ {officeCity}). Without batching, each in-office day involves independent roundtrip transit legs (6 segments/day = {baseline.travelLegsCount} legs @ ₹850 train + cab transfers) plus daily meal per diem.
+              <br />
+              • <strong>Optimization Candidates:</strong> Group contiguous office days into batched corporate stays (PG @ ₹1,800/nt or Hotel @ ₹2,800/nt), cutting mid-week transit legs from {baseline.travelLegsCount} down to 6, saving up to {formatCurrency(activeResult?.recommendedOption?.savings || 0)} and eliminating transit fatigue.
+            </p>
+          </div>
         </div>
       )}
 

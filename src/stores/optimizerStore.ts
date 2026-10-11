@@ -102,10 +102,13 @@ export const useOptimizerStore = create<OptimizerState>((set, get) => ({
     const expenseState = useExpenseStore.getState();
     const settingsState = useSettingsStore.getState();
 
-    const startDate = request.dateOverrides[0]?.date || new Date().toISOString().substring(0, 10);
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + 7);
-    const endDate = d.toISOString().substring(0, 10);
+    const startDate = request.startDate || request.dateOverrides[0]?.date || new Date().toISOString().substring(0, 10);
+    let endDate = request.endDate;
+    if (!endDate) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + 7);
+      endDate = d.toISOString().substring(0, 10);
+    }
 
     const normalSchedule = scheduleState.normalSchedule;
     const resolvedWorkDays = resolveDateRange(startDate, endDate, normalSchedule, scheduleState.exceptions);
