@@ -65,6 +65,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!profile && fbUser) {
         profile = await syncUserProfileFromAuth(fbUser);
       }
+      const localCompleted =
+        localStorage.getItem(`officepilot_onboarding_completed_${uid}`) === 'true' ||
+        localStorage.getItem('officepilot_onboarding_completed') === 'true';
+
+      if (profile) {
+        if (localCompleted) {
+          profile.onboardingCompleted = true;
+        }
+        localStorage.setItem(`officepilot_profile_${uid}`, JSON.stringify(profile));
+      } else {
+        const cached = localStorage.getItem(`officepilot_profile_${uid}`);
+        if (cached) {
+          try {
+            profile = JSON.parse(cached);
+          } catch {
+            // Ignore parse error
+          }
+        }
+      }
+
       const prefs = await getUserPreferences(uid);
       
       setUser(profile);
@@ -88,7 +108,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setFirebaseUser(currentFirebaseUser);
       if (currentFirebaseUser) {
         try {
-          const profile = await syncUserProfileFromAuth(currentFirebaseUser);
+          let profile = await getUserProfile(currentFirebaseUser.uid);
+          if (!profile) {
+            profile = await syncUserProfileFromAuth(currentFirebaseUser);
+          }
+          const localCompleted =
+            localStorage.getItem(`officepilot_onboarding_completed_${currentFirebaseUser.uid}`) === 'true' ||
+            localStorage.getItem('officepilot_onboarding_completed') === 'true';
+
+          if (profile) {
+            if (localCompleted) {
+              profile.onboardingCompleted = true;
+            }
+            localStorage.setItem(`officepilot_profile_${currentFirebaseUser.uid}`, JSON.stringify(profile));
+          }
+
           const prefs = await getUserPreferences(currentFirebaseUser.uid);
           setUser(profile);
           setPreferences(prefs);
@@ -202,13 +236,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Update profile
   const updateProfile = async (data: Partial<UserDocument>): Promise<void> => {
-    if (!user?.uid) return;
+    const activeUid = user?.uid || firebaseUser?.uid || 'demo-traveler-uid-001';
     try {
-      await updateUserProfileService(user.uid, data);
-      setUser((prev) => (prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null));
+      if (data.onboardingCompleted) {
+        localStorage.setItem(`officepilot_onboarding_completed_${activeUid}`, 'true');
+        localStorage.setItem('officepilot_onboarding_completed', 'true');
+      }
+      await updateUserProfileService(activeUid, data);
+      setUser((prev) => {
+        const updated: UserDocument = prev
+          ? { ...prev, ...data, updatedAt: new Date().toISOString() }
+          : {
+              uid: activeUid,
+              displayName: firebaseUser?.displayName || 'Office Pilot Traveler',
+              email: firebaseUser?.email || '',
+              photoURL: firebaseUser?.photoURL || '',
+              homeCity: data.homeCity || 'Mumbai, Maharashtra',
+              officeCity: data.officeCity || 'Pune Technology Center',
+              organization: data.organization || 'Office Pilot',
+              timezone: data.timezone || 'Asia/Kolkata',
+              currency: data.currency || 'INR',
+              onboardingCompleted: Boolean(data.onboardingCompleted),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+        localStorage.setItem(`officepilot_profile_${activeUid}`, JSON.stringify(updated));
+        return updated;
+      });
       toast.success('Profile updated');
     } catch (err) {
       console.error('[AuthContext] Update profile error:', err);
+      // Still persist locally so the user is never blocked or trapped in onboarding
+      if (data.onboardingCompleted) {
+        localStorage.setItem(`officepilot_onboarding_completed_${activeUid}`, 'true');
+        localStorage.setItem('officepilot_onboarding_completed', 'true');
+        setUser((prev) => (prev ? { ...prev, ...data } : null));
+      }
       toast.error('Failed to update profile');
       throw err;
     }

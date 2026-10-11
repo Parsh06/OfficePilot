@@ -45,7 +45,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Authenticated, but has not completed onboarding and page requires onboarding
-  if (requireOnboardingComplete && user && !user.onboardingCompleted) {
+  const isCompleted = Boolean(
+    user?.onboardingCompleted ||
+    (user?.uid && localStorage.getItem(`officepilot_onboarding_completed_${user.uid}`) === 'true') ||
+    localStorage.getItem('officepilot_onboarding_completed') === 'true'
+  );
+
+  if (requireOnboardingComplete && user && !isCompleted) {
     return <Navigate to="/onboarding" replace />;
   }
 

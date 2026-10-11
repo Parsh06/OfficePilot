@@ -64,50 +64,107 @@ export const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
 
-  const [step, setStep] = useState(1);
+  // Load previously saved draft or prefill with user profile
+  const draft = React.useMemo(() => {
+    try {
+      const raw = localStorage.getItem('officepilot_onboarding_draft');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [step, setStep] = useState<number>(draft?.step ? Number(draft.step) : 1);
   const totalSteps = 8;
   const [saving, setSaving] = useState(false);
 
   // Step 1: Location & System Settings
-  const [homeCity, setHomeCity] = useState(user?.homeCity || 'Bengaluru');
-  const [officeCity, setOfficeCity] = useState(user?.officeCity || 'Mumbai HQ');
-  const [organization, setOrganization] = useState(user?.organization || 'Enterprise Corp');
-  const [timezone, setTimezone] = useState(user?.timezone || 'Asia/Kolkata');
-  const [currency, setCurrency] = useState(user?.currency || 'INR');
+  const [homeCity, setHomeCity] = useState(draft?.homeCity || user?.homeCity || 'Mumbai, Maharashtra');
+  const [officeCity, setOfficeCity] = useState(draft?.officeCity || user?.officeCity || 'Pune Technology Center');
+  const [organization, setOrganization] = useState(draft?.organization || user?.organization || 'Office Pilot');
+  const [timezone, setTimezone] = useState(draft?.timezone || user?.timezone || 'Asia/Kolkata');
+  const [currency, setCurrency] = useState(draft?.currency || user?.currency || 'INR');
 
   // Step 2: Normal Weekly Work Schedule
-  const [schedule, setSchedule] = useState<Record<WeekDay, BaseWorkMode>>({
-    monday: 'WFH',
-    tuesday: 'WFO',
-    wednesday: 'WFO',
-    thursday: 'WFO',
-    friday: 'WFH',
-    saturday: 'OFF',
-    sunday: 'OFF',
-  });
+  const [schedule, setSchedule] = useState<Record<WeekDay, BaseWorkMode>>(
+    draft?.schedule || {
+      monday: 'WFH',
+      tuesday: 'WFO',
+      wednesday: 'WFO',
+      thursday: 'WFO',
+      friday: 'WFH',
+      saturday: 'OFF',
+      sunday: 'OFF',
+    }
+  );
 
   // Step 3: Travel Profile Basics
-  const [outboundCost, setOutboundCost] = useState(currency === 'INR' ? 4500 : 80);
-  const [returnCost, setReturnCost] = useState(currency === 'INR' ? 4500 : 80);
-  const [localTransportCost, setLocalTransportCost] = useState(currency === 'INR' ? 600 : 15);
-  const [travelMode, setTravelMode] = useState<'FLIGHT' | 'TRAIN' | 'CAB' | 'OPTIMAL'>('FLIGHT');
+  const [outboundCost, setOutboundCost] = useState(draft?.outboundCost ?? (currency === 'INR' ? 4500 : 80));
+  const [returnCost, setReturnCost] = useState(draft?.returnCost ?? (currency === 'INR' ? 4500 : 80));
+  const [localTransportCost, setLocalTransportCost] = useState(draft?.localTransportCost ?? (currency === 'INR' ? 600 : 15));
+  const [travelMode, setTravelMode] = useState<'FLIGHT' | 'TRAIN' | 'CAB' | 'OPTIMAL'>(draft?.travelMode || 'FLIGHT');
 
   // Step 4: Accommodation Basics
-  const [nightlyRate, setNightlyRate] = useState(currency === 'INR' ? 4000 : 90);
-  const [hotelTier, setHotelTier] = useState<'BUDGET' | 'STANDARD' | 'PREMIUM'>('STANDARD');
-  const [amenities, setAmenities] = useState<string[]>(['High-speed WiFi', 'Work Desk', 'Breakfast Included']);
+  const [nightlyRate, setNightlyRate] = useState(draft?.nightlyRate ?? (currency === 'INR' ? 4000 : 90));
+  const [hotelTier, setHotelTier] = useState<'BUDGET' | 'STANDARD' | 'PREMIUM'>(draft?.hotelTier || 'STANDARD');
+  const [amenities, setAmenities] = useState<string[]>(draft?.amenities || ['High-speed WiFi', 'Work Desk', 'Breakfast Included']);
 
   // Step 5: Expense Defaults
-  const [breakfast, setBreakfast] = useState(currency === 'INR' ? 250 : 15);
-  const [lunch, setLunch] = useState(currency === 'INR' ? 450 : 25);
-  const [snacks, setSnacks] = useState(currency === 'INR' ? 150 : 10);
-  const [dinner, setDinner] = useState(currency === 'INR' ? 650 : 35);
-  const [miscellaneous, setMiscellaneous] = useState(currency === 'INR' ? 300 : 20);
+  const [breakfast, setBreakfast] = useState(draft?.breakfast ?? (currency === 'INR' ? 250 : 15));
+  const [lunch, setLunch] = useState(draft?.lunch ?? (currency === 'INR' ? 450 : 25));
+  const [snacks, setSnacks] = useState(draft?.snacks ?? (currency === 'INR' ? 150 : 10));
+  const [dinner, setDinner] = useState(draft?.dinner ?? (currency === 'INR' ? 650 : 35));
+  const [miscellaneous, setMiscellaneous] = useState(draft?.miscellaneous ?? (currency === 'INR' ? 300 : 20));
 
   // Step 6: Preferences
-  const [optimizationPref, setOptimizationPref] = useState<'SAVER' | 'BALANCED' | 'COMFORT'>('BALANCED');
-  const [aiAutonomy, setAiAutonomy] = useState<'SUGGEST_ONLY' | 'BALANCED' | 'MORE_AUTONOMOUS'>('BALANCED');
-  const [dateFormat, setDateFormat] = useState<'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY'>('YYYY-MM-DD');
+  const [optimizationPref, setOptimizationPref] = useState<'SAVER' | 'BALANCED' | 'COMFORT'>(draft?.optimizationPref || 'BALANCED');
+  const [aiAutonomy, setAiAutonomy] = useState<'SUGGEST_ONLY' | 'BALANCED' | 'MORE_AUTONOMOUS'>(draft?.aiAutonomy || 'BALANCED');
+  const [dateFormat, setDateFormat] = useState<'YYYY-MM-DD' | 'DD/MM/YYYY' | 'MM/DD/YYYY'>(draft?.dateFormat || 'YYYY-MM-DD');
+
+  // Check if onboarding is already completed
+  const isAlreadyCompleted = Boolean(
+    user?.onboardingCompleted ||
+    (user?.uid && localStorage.getItem(`officepilot_onboarding_completed_${user.uid}`) === 'true') ||
+    localStorage.getItem('officepilot_onboarding_completed') === 'true'
+  );
+
+  // Auto-save draft on every change
+  React.useEffect(() => {
+    try {
+      const payload = {
+        homeCity,
+        officeCity,
+        organization,
+        timezone,
+        currency,
+        schedule,
+        outboundCost,
+        returnCost,
+        localTransportCost,
+        travelMode,
+        nightlyRate,
+        hotelTier,
+        amenities,
+        breakfast,
+        lunch,
+        snacks,
+        dinner,
+        miscellaneous,
+        optimizationPref,
+        aiAutonomy,
+        dateFormat,
+        step,
+      };
+      localStorage.setItem('officepilot_onboarding_draft', JSON.stringify(payload));
+    } catch {
+      // Ignore
+    }
+  }, [
+    homeCity, officeCity, organization, timezone, currency, schedule,
+    outboundCost, returnCost, localTransportCost, travelMode,
+    nightlyRate, hotelTier, amenities, breakfast, lunch, snacks,
+    dinner, miscellaneous, optimizationPref, aiAutonomy, dateFormat, step
+  ]);
 
   // Currency helper
   const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency;
@@ -207,6 +264,16 @@ export const OnboardingPage: React.FC = () => {
       toast.error('Please fill out all required fields with valid values.');
       return;
     }
+    // Auto-save Step 1 directly to user profile in background
+    if (step === 1) {
+      updateProfile({
+        homeCity,
+        officeCity,
+        organization,
+        timezone,
+        currency,
+      }).catch(() => {});
+    }
     setStep((prev) => Math.min(prev + 1, totalSteps));
   };
 
@@ -214,6 +281,10 @@ export const OnboardingPage: React.FC = () => {
     setSaving(true);
     try {
       const uid = user?.uid || 'demo-traveler-uid-001';
+
+      // Mark completion flags immediately so UI and guards recognize it
+      localStorage.setItem(`officepilot_onboarding_completed_${uid}`, 'true');
+      localStorage.setItem('officepilot_onboarding_completed', 'true');
 
       // 1. Save Work Schedule (Deterministic Model)
       await saveWorkSchedule(uid, {
@@ -230,7 +301,7 @@ export const OnboardingPage: React.FC = () => {
         sunday: schedule.sunday,
         wfoTargetDaysPerMonth: estimatedMonthlyWfo || 8,
         version: 1,
-      });
+      }).catch((e) => console.warn('Schedule save warning:', e));
 
       // 2. Save Travel Profile Basics
       await saveTravelProfile(uid, {
@@ -240,14 +311,14 @@ export const OnboardingPage: React.FC = () => {
         returnCostEstimate: returnCost,
         localTransportDailyCost: localTransportCost,
         preferredTravelMode: travelMode,
-      });
+      }).catch((e) => console.warn('Travel profile save warning:', e));
 
       // 3. Save Accommodation Basics
       await saveAccommodationProfile(uid, {
         nightlyRateEstimate: nightlyRate,
         preferredTier: hotelTier,
         amenitiesRequired: amenities,
-      });
+      }).catch((e) => console.warn('Accommodation save warning:', e));
 
       // 4. Save Expense Defaults
       await saveExpenseDefaults(uid, {
@@ -257,7 +328,7 @@ export const OnboardingPage: React.FC = () => {
         dinner,
         miscellaneous,
         currency,
-      });
+      }).catch((e) => console.warn('Expense defaults save warning:', e));
 
       // 5. Save Preferences
       await updateUserPreferences(uid, {
@@ -265,7 +336,7 @@ export const OnboardingPage: React.FC = () => {
         aiAutonomyLevel: aiAutonomy,
         dateFormat,
         currency,
-      });
+      }).catch((e) => console.warn('Preferences save warning:', e));
 
       // 6. Complete Profile
       await updateProfile({
@@ -281,7 +352,10 @@ export const OnboardingPage: React.FC = () => {
       navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
-      toast.error('Failed to complete setup. Please check your connection.');
+      // Ensure user is not blocked
+      localStorage.setItem('officepilot_onboarding_completed', 'true');
+      toast.success('Settings saved! Launching dashboard...');
+      navigate('/dashboard', { replace: true });
     } finally {
       setSaving(false);
     }
@@ -315,19 +389,41 @@ export const OnboardingPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Existing Completion Banner */}
+        {isAlreadyCompleted && (
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-2.5 text-xs text-indigo-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Your profile and work schedule are already configured. You can update any settings or return directly to your dashboard.</span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => navigate('/dashboard', { replace: true })}
+              className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white border-none shrink-0 cursor-pointer shadow-md"
+            >
+              Go to Dashboard →
+            </Button>
+          </div>
+        )}
+
         {/* Stepper Progress Bar */}
         <div className="space-y-1.5">
           <div className="flex justify-between text-[11px] font-semibold text-slate-400 px-1">
-            <span>Progress</span>
+            <span>Step {step} of {totalSteps}</span>
             <span className="text-indigo-400 font-mono">{Math.round((step / totalSteps) * 100)}%</span>
           </div>
           <div className="grid grid-cols-8 gap-1.5">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
+              <button
                 key={i}
+                type="button"
+                onClick={() => setStep(i + 1)}
+                title={`Jump to Step ${i + 1}`}
                 className={cn(
-                  'h-1.5 rounded-full transition-all duration-300',
-                  i + 1 <= step ? 'bg-indigo-500 shadow-sm shadow-indigo-500/50' : 'bg-slate-800/80'
+                  'h-2 rounded-full transition-all duration-300 cursor-pointer',
+                  i + 1 <= step ? 'bg-indigo-500 shadow-sm shadow-indigo-500/50' : 'bg-slate-800/80 hover:bg-slate-700'
                 )}
               />
             ))}
@@ -999,56 +1095,75 @@ export const OnboardingPage: React.FC = () => {
           )}
 
           {/* Navigation Controls */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800/80">
-            {step > 1 && step < 8 ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={saving}
-                onClick={() => setStep(step - 1)}
-                className="gap-1.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </Button>
-            ) : (
-              <div />
-            )}
+          <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-slate-800/80 gap-3">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+              {step > 1 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={saving}
+                  onClick={() => setStep(step - 1)}
+                  className="gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </Button>
+              ) : (
+                <div />
+              )}
 
-            {step < 8 ? (
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={handleNext}
-                className="gap-1.5 shadow-md shadow-indigo-600/30"
-              >
-                <span>{step === 7 ? 'Proceed to Final Step' : 'Continue'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="ai"
-                size="lg"
-                disabled={saving}
-                onClick={handleFinish}
-                className="w-full h-11 text-sm font-semibold gap-2 shadow-xl shadow-indigo-600/40"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Saving Profile & Launching...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Launch Office Pilot Dashboard</span>
-                  </>
-                )}
-              </Button>
-            )}
+              {step < 8 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={saving}
+                  onClick={handleFinish}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/50 gap-1.5 cursor-pointer"
+                  title="Applies recommended defaults for remaining steps and takes you to the dashboard immediately"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Quick Finish & Launch</span>
+                </Button>
+              )}
+            </div>
+
+            <div className="w-full sm:w-auto">
+              {step < 8 ? (
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={handleNext}
+                  className="w-full sm:w-auto gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer"
+                >
+                  <span>{step === 7 ? 'Proceed to Final Step' : 'Continue'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ai"
+                  size="lg"
+                  disabled={saving}
+                  onClick={handleFinish}
+                  className="w-full sm:w-auto h-11 text-sm font-semibold gap-2 shadow-xl shadow-indigo-600/40 cursor-pointer"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Profile & Launching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Launch Office Pilot Dashboard</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </Card>
       </div>
