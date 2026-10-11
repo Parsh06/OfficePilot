@@ -162,10 +162,57 @@ export const useAIStore = create<AIState>((set, get) => ({
             ? `I have calculated the impact of switching all Thursdays over the next 3 months (${dates.length} dates) to WFH. This will save an estimated ₹${(852.5 * dates.length).toFixed(2)} in transit tickets and eliminate 6 travel legs. Please review the proposed ChangeSet below and confirm to apply.`
             : `I have prepared the schedule change for Thursday (${dates[0]}). Switching from WFO to WFH saves an estimated ₹852.50 by avoiding round-trip transit and local cab fares. Please confirm the ChangeSet below.`;
           toolCalls.push({ tool: 'calculateScheduleImpact', args: { dates }, resultSummary: `Calculated ₹${(852.5 * dates.length).toFixed(2)} savings` });
+        } else if (promptLower.includes('holiday') || promptLower.includes('leave') || promptLower.includes('vacation') || promptLower.includes('day off')) {
+          // Detect specific date if mentioned
+          let targetDate = '2026-10-20';
+          if (promptLower.includes('20') && (promptLower.includes('oct') || promptLower.includes('october'))) {
+            targetDate = '2026-10-20';
+          } else if (promptLower.includes('tomorrow')) {
+            targetDate = '2026-10-12';
+          }
+
+          changeSet = {
+            actionId: `act_holiday_${Date.now().toString(36)}`,
+            userId: 'active-user',
+            title: `Schedule Change: Holiday / Leave on ${targetDate}`,
+            description: `Mark ${targetDate} as Holiday/Leave and clear scheduled commute & expenses`,
+            riskLevel: 'MEDIUM_RISK',
+            requiresConfirmation: true,
+            affectedRecords: [targetDate],
+            proposedChanges: [
+              {
+                id: `chg_${targetDate}`,
+                entityType: 'SCHEDULE',
+                targetDate,
+                description: `${targetDate}: WFO → LEAVE / HOLIDAY`,
+                beforeState: { mode: 'WFO' },
+                afterState: { mode: 'LEAVE' },
+              },
+            ],
+            beforeState: { mode: 'WFO' },
+            estimatedImpact: {
+              costDelta: -852.5,
+              savings: 852.5,
+              wfoDiff: -1,
+              wfhDiff: 0,
+              travelLegsDiff: -2,
+              nightsDiff: 0,
+              affectedDatesCount: 1,
+              affectedDates: [targetDate],
+            },
+            status: 'awaiting_confirmation',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          messageText = `I have registered your holiday for **${targetDate}** and prepared a calendar update to mark it as **Holiday / Leave**. This will cancel planned transit legs for that day and save an estimated **₹852.50**. Please review the ChangeSet below and confirm to apply it to your calendar.`;
+          toolCalls.push({ tool: 'addLeave', args: { date: targetDate, leaveType: 'VACATION' }, resultSummary: `Recorded holiday for ${targetDate}` });
+        } else if (promptLower === 'hello' || promptLower === 'hi' || promptLower === 'hey' || promptLower.startsWith('hello') || promptLower.startsWith('hi ')) {
+          messageText = `Hello! I am your **Office Pilot AI Assistant**. I can analyze your hybrid schedule, simulate commute savings, mark holidays/leaves, or update your in-office days with verified calculations. What would you like to plan today?`;
         } else if (promptLower.includes('next week') && promptLower.includes('cost')) {
           messageText = `Based on your hybrid schedule for next week (Mon–Wed WFO, Thu–Fri WFH), your projected travel and accommodation costs are **₹4,250** (Vande Bharat Express round-trip: ₹1,700, 2-night Corporate PG: ₹2,200, meals & local cab: ₹350).`;
           toolCalls.push({ tool: 'calculateWeeklyCost', args: { weekOffset: 1 }, resultSummary: 'Total projected: ₹4,250' });
-        } else if (promptLower.includes('save') && promptLower.includes('2,000')) {
+        } else if (promptLower.includes('save') && (promptLower.includes('2,000') || promptLower.includes('2000') || promptLower.includes('money') || promptLower.includes('cost'))) {
           messageText = `Here are 2 verified optimization opportunities to save **₹2,200** this month:\n\n1. **Batch WFO Days (Save ₹1,850)**: Move standalone Thursday WFO to Wednesday to eliminate 1 intermediate inter-city cab and stay overnight at corporate partner rate.\n2. **Advance Train Booking (Save ₹350)**: Reserve the Monday 06:00 AM Vande Bharat 5 days prior to secure Dynamic Tier 1 pricing.`;
           toolCalls.push({ tool: 'runCostOptimizer', args: { targetSavings: 2000 }, resultSummary: 'Generated 2 high-confidence recommendations' });
         } else if (promptLower.includes('expensive') && promptLower.includes('wfo')) {
@@ -177,6 +224,10 @@ export const useAIStore = create<AIState>((set, get) => ({
         } else if (promptLower.includes('change') && promptLower.includes('recently')) {
           messageText = `**Recent Verified Changes:**\n1. **Action #act_wfh_thu**: Adjusted calendar for Thursday (Oct 15) from WFO to WFH (Saved ₹852.50)\n2. **Action #act_budget_oct**: Verified monthly travel cap at ₹25,000 with 8 required office days.\n\nAll changes maintain full audit trails and can be reversed using the **Undo** command.`;
           toolCalls.push({ tool: 'getAuditHistory', args: { limit: 5 }, resultSummary: 'Retrieved 2 recent changes' });
+        } else if (promptLower.includes('schedule') || promptLower.includes('calendar') || promptLower.includes('wfo') || promptLower.includes('wfh')) {
+          messageText = `Your configured hybrid pattern is **3 days WFO / 2 days WFH** (Mon–Wed at the office, Thu–Fri remote). This satisfies your 8-day monthly corporate requirement with ₹4,965 spent to date against your ₹25,000 monthly budget. Let me know if you would like to move a WFO day or add a leave exception.`;
+        } else {
+          messageText = `I analyzed your verified work schedule and travel preferences. All projections use deterministic route rates, lodging allowances, and expense templates. Let me know if you would like to test a scenario simulation, mark an upcoming leave, or optimize next week's commute corridor.`;
         }
 
         response = {

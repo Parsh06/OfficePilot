@@ -3,6 +3,10 @@ import { baseLogger } from '../utils/logger';
 
 let adminApp: admin.app.App | null = null;
 
+function getAdminNamespace(): any {
+  return (admin as any).default || admin;
+}
+
 export function isFirebaseAdminConfigured(): boolean {
   return Boolean(
     process.env.FIREBASE_PROJECT_ID &&
@@ -17,8 +21,10 @@ export function isFirebaseAdminConfigured(): boolean {
 export function getFirebaseAdminApp(): admin.app.App | null {
   if (adminApp) return adminApp;
 
-  if (admin.apps.length > 0 && admin.apps[0]) {
-    adminApp = admin.apps[0];
+  const adminInstance = getAdminNamespace();
+  const existingApps = adminInstance.apps || [];
+  if (existingApps.length > 0 && existingApps[0]) {
+    adminApp = existingApps[0];
     return adminApp;
   }
 
@@ -29,8 +35,8 @@ export function getFirebaseAdminApp(): admin.app.App | null {
 
   try {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n');
-    adminApp = admin.initializeApp({
-      credential: admin.credential.cert({
+    adminApp = adminInstance.initializeApp({
+      credential: adminInstance.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey,
@@ -47,13 +53,15 @@ export function getFirebaseAdminApp(): admin.app.App | null {
 export function getAdminAuth(): admin.auth.Auth | null {
   const app = getFirebaseAdminApp();
   if (!app) return null;
-  return admin.auth(app);
+  const adminInstance = getAdminNamespace();
+  return typeof adminInstance.auth === 'function' ? adminInstance.auth(app) : null;
 }
 
 export function getAdminFirestore(): admin.firestore.Firestore | null {
   const app = getFirebaseAdminApp();
   if (!app) return null;
-  return admin.firestore(app);
+  const adminInstance = getAdminNamespace();
+  return typeof adminInstance.firestore === 'function' ? adminInstance.firestore(app) : null;
 }
 
 /**

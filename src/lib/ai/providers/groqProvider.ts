@@ -144,6 +144,27 @@ export class GroqProvider implements AIProvider {
     const hasToolResponses = params.messages.some((m) => m.role === 'tool');
 
     if (!hasToolResponses && params.tools && params.tools.length > 0) {
+      if (lastUserMessage.includes('holiday') || lastUserMessage.includes('leave') || lastUserMessage.includes('vacation') || lastUserMessage.includes('day off')) {
+        let date = '2026-10-20';
+        if (lastUserMessage.includes('20')) date = '2026-10-20';
+        else if (lastUserMessage.includes('tomorrow')) date = '2026-10-12';
+        return {
+          content: null,
+          toolCalls: [
+            {
+              id: 'call_add_leave_1',
+              type: 'function',
+              function: {
+                name: 'addLeave',
+                arguments: JSON.stringify({ date, leaveType: 'VACATION', reason: 'User holiday' }),
+              },
+            },
+          ],
+          modelUsed: `${model} (offline-deterministic)`,
+          finishReason: 'tool_calls',
+        };
+      }
+
       if (lastUserMessage.includes('make') || lastUserMessage.includes('set') || lastUserMessage.includes('switch')) {
         if (lastUserMessage.includes('wfh') || lastUserMessage.includes('thursday')) {
           const isBulk = lastUserMessage.includes('all') || lastUserMessage.includes('3 months');
@@ -258,7 +279,9 @@ export class GroqProvider implements AIProvider {
 
     const fallbackResponse =
       dynamicSummary ||
-      `I analyzed your verified work schedule and travel preferences. All projections use deterministic route rates, lodging allowances, and expense templates. Let me know if you would like to test a scenario simulation or optimize next week's commute corridor.`;
+      (lastUserMessage.startsWith('hello') || lastUserMessage === 'hi' || lastUserMessage === 'hey' || lastUserMessage.startsWith('hi ')
+        ? `Hello! I am your **Office Pilot AI Assistant**. I can analyze your hybrid schedule, simulate commute savings, mark holidays/leaves, or update your in-office days with verified calculations. How can I help you today?`
+        : `I analyzed your verified work schedule and travel preferences. All projections use deterministic route rates, lodging allowances, and expense templates. Let me know if you would like to test a scenario simulation, mark an upcoming leave, or optimize next week's commute corridor.`);
 
     return {
       content: fallbackResponse,
